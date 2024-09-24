@@ -16,13 +16,48 @@ export default function Navbar() {
 
 	const { isAuthenticated } = useAppSelector(state => state.auth);
 
-	const handleLogout = () => {
-		logout(undefined)
-			.unwrap()
-			.then(() => {
-				dispatch(setLogout());
-			});
-	};
+const handleLogout = async () => {
+  try {
+    // Attempt to refresh the token before logout
+    const refreshToken = localStorage.getItem('refreshToken');
+    const refreshResponse = await fetch('/api/jwt/refresh/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ refresh: refreshToken }),
+    });
+
+    if (refreshResponse.ok) {
+      const { access } = await refreshResponse.json();
+      localStorage.setItem('accessToken', access);
+
+      // Now attempt to log out with the new access token
+      const logoutResponse = await fetch('/api/logout/', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${access}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (logoutResponse.ok) {
+        // Clear tokens and update Redux state
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        dispatch(setLogout()); // Use setLogout instead of logout
+        console.log('Logged out successfully');
+      } else {
+        console.error('Failed to log out:', logoutResponse.statusText);
+      }
+    } else {
+      console.error('Failed to refresh token:', refreshResponse.statusText);
+    }
+  } catch (error) {
+    console.error('Error during logout:', error);
+  }
+};
+
 
 	const isSelected = (path: string) => (pathname === path ? true : false);
 
@@ -113,3 +148,6 @@ export default function Navbar() {
 		</Disclosure>
 	);
 }
+
+
+

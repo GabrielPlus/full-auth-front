@@ -36,7 +36,7 @@ export default function Page() {
     console.error('Error fetching user:', error);
     return (
       <div className='flex justify-center my-8'>
-        <p className='text-red-500'>Failed to load user data. Please try again later.</p>
+        <p className='text-red-500'>You are logged out</p>
       </div>
     );
   }
